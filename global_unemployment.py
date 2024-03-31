@@ -6,6 +6,16 @@ import statistics
 from math import *
 from sklearn.preprocessing import StandardScaler
 from imblearn.over_sampling import RandomOverSampler
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
+
+
 
 unemployment_df = pd.read_csv(r"C:\Users\USER\Downloads\global_unemployment_data.csv")
 print(unemployment_df)
@@ -27,6 +37,8 @@ print(df.describe())
 print(df.nunique())
 print(df['2024'])
 print(df.head())
+
+
 #print data for Ghana
 Ghana_df = unemployment_df[unemployment_df.country_name == "Ghana"]
 print(Ghana_df)
@@ -158,6 +170,7 @@ sns.barplot(data=df,x="age_categories",y="2023",ax=axes[2,0])
 axes[2,1].set_title("2024 Mean distribtion based on age categories")
 sns.barplot(data=df,x="age_categories",y="2024",ax=axes[2,1])
 plt.show()
+
 """
 fig,axes = plt.subplots(3,2,figsize=(16,8))
 axes[0,0].set_title("2019 Mean distribtion based on country names")
@@ -173,6 +186,73 @@ sns.scatterplot(data=df,x="country_name",y="2023",ax=axes[2,0])
 axes[2,1].set_title("2024 Mean distribtion based on country names")
 sns.scatterplot(data=df,x="country_name",y="2024",ax=axes[2,1])
 plt.show()"""
+
+#USING DECISION TREE
+import sklearn.tree as tree
+from sklearn.tree import DecisionTreeClassifier
+#DROP columns not needed
+unemployment_df = unemployment_df.drop(['indicator_name','age_group'],axis=1)
+#defining x and y
+
+#CREATING ENCODERS
+label = LabelEncoder()
+unemployment_df['sex']= label.fit_transform(unemployment_df['sex'])
+unemployment_df['age_categories']= label.fit_transform(unemployment_df['age_categories'])
+print(unemployment_df) #OR
+x=unemployment_df.iloc[:,1:]
+y=unemployment_df.iloc[:,0]
+#unemployment_df['sex'] = (unemployment_df['sex']=='male').astype(int)
+#unemployment_df['age_group'] = (unemployment_df['age_group']=='Under 15').astype(int)
+#print(unemployment_df)
+x_train,x_test,y_train,y_test = train_test_split(x,y,test_size=0.2,random_state=0)
+print(x_train)
+dt_model = DecisionTreeClassifier(max_depth=3,random_state=150)
+dt_model.fit(x_train,y_train)
+y_pred = dt_model.predict(x_test)
+print(y_pred)
+print(dt_model.score(x_test,y_test))
+print(classification_report(y_test,y_pred))
+
+#DROPPING COLUMNS NOT NEEDED FOR LINEAR REGRESSION.this takes into accout 2024 predictions
+unemployment_df=unemployment_df.drop(['country_name','sex','age_categories'],axis=1)
+print(unemployment_df)
+#CREATING X AND Y
+x=unemployment_df.iloc[:,:-1]
+print(x.shape)
+y=unemployment_df.iloc[:,-1]
+y=y.values
+y = y.reshape(-1,1)
+print(y.shape)
+ #this gives a df with labels #OR the below tow gives a numpy array
+#x=unemployment_df.values[:,1:]
+#x=unemployment_df[unemployment_df.columns[1:]].values
+#IMPUTING to account for missing values of x in DATASET
+imputer = SimpleImputer(strategy='mean')
+x_imputed= imputer.fit_transform(x)
+y_imputed = imputer.fit_transform(y)
+
+#SPLITTING DATASET
+x_train,x_test,y_train,y_test = train_test_split(x_imputed,y_imputed,test_size=0.2,random_state=42)
+print(x_imputed.shape)
+print(y_imputed.shape) #OR ERROR below
+"""split_part = np.split(unemployment_df.sample(frac=1),[int(0.6*len(unemployment_df)),int(0.8*len(unemployment_df))])
+num_split_part = len(split_part)
+if num_split_part >=3:
+    train,valid,test = split_part
+train,x_train,y_train = train.iloc[:,1:],train.iloc[:,0]
+valid,x_valid,y_valid = valid.iloc[:,1:],valid.iloc[:,0]
+test,x_test,y_test =test.iloc[:,1:],test.iloc[:,0]
+print(x_train)"""
+
+#LINEAR REGRESSION
+linreg_model = LinearRegression()
+linreg_model.fit(x_train,y_train)
+y_pred = linreg_model.predict(x_test)
+print(y_pred)
+r2 =r2_score(y_test,y_pred)
+print(f"the root square value is {r2}")
+mse = mean_squared_error(y_test,y_pred)
+print(f"the mean squared error is {mse}")
 
 
 
