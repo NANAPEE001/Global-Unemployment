@@ -14,7 +14,9 @@ from sklearn.linear_model import LinearRegression
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
-
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+import tensorflow as tf
 
 
 unemployment_df = pd.read_csv(r"C:\Users\USER\Downloads\global_unemployment_data.csv")
@@ -198,24 +200,88 @@ unemployment_df = unemployment_df.drop(['indicator_name','age_group'],axis=1)
 label = LabelEncoder()
 unemployment_df['sex']= label.fit_transform(unemployment_df['sex'])
 unemployment_df['age_categories']= label.fit_transform(unemployment_df['age_categories'])
-print(unemployment_df) #OR
+print(unemployment_df) 
 x=unemployment_df.iloc[:,1:]
-y=unemployment_df.iloc[:,0]
+y=unemployment_df.iloc[:,0]#OR
 #unemployment_df['sex'] = (unemployment_df['sex']=='male').astype(int)
 #unemployment_df['age_group'] = (unemployment_df['age_group']=='Under 15').astype(int)
 #print(unemployment_df)
 x_train,x_test,y_train,y_test = train_test_split(x,y,test_size=0.2,random_state=0)
 print(x_train)
+#DECISION TREE MODEL
+x_train,x_test,y_train,y_test = train_test_split(x,y,test_size=0.2,random_state=0)
 dt_model = DecisionTreeClassifier(max_depth=3,random_state=150)
 dt_model.fit(x_train,y_train)
 y_pred = dt_model.predict(x_test)
 print(y_pred)
 print(dt_model.score(x_test,y_test))
 print(classification_report(y_test,y_pred))
-
+conf_mat=confusion_matrix(y_test,y_pred)
+print(conf_mat)
+plt.figure(figsize=(5,4))
+sns.heatmap(conf_mat,cmap="coolwarm",fmt='g',annot=True)
+plt.xlabel("Predicted labels")
+plt.ylabel("Actual labels")
+plt.title("Confusion matrix")
+plt.show()
+#USING RANDOMFOREST CLASSIFIER
+from sklearn.ensemble import RandomForestClassifier
+x=unemployment_df.iloc[:,1:]
+y=unemployment_df.iloc[:,0]
+imputer=SimpleImputer(strategy='mean')
+x_impute = imputer.fit_transform(x)
+x_train,x_test,y_train,y_test = train_test_split(x_impute,y,test_size=0.2,random_state=0)
+rf_model = RandomForestClassifier(n_estimators=2000,max_depth=500,random_state=200)
+rf_model.fit(x_train,y_train)
+y_pred = rf_model.predict(x_test)
+print(y_pred)
+print(classification_report(y_test,y_pred))
+print(accuracy_score(y_test,y_pred))
+conf_mat=confusion_matrix(y_test,y_pred)
+print(conf_mat)
+plt.figure(figsize=(5,4))
+sns.heatmap(conf_mat,cmap="coolwarm",fmt='g',annot=True)
+plt.xlabel("Predicted labels")
+plt.ylabel("Actual labels")
+plt.title("Confusion matrix")
+plt.show()
+#USING LOGISTICREGRESSION
+from sklearn.linear_model import LogisticRegression
+LR_model = LogisticRegression()
+LR_model.fit(x_train,y_train)
+y_pred=LR_model.predict(x_test)
+print(LR_model.score(x_test,y_test))
+print(accuracy_score(y_test,y_pred))
+conf_mat=confusion_matrix(y_test,y_pred)
+print(conf_mat)
+plt.figure(figsize=(5,4))
+sns.heatmap(conf_mat,cmap="coolwarm",fmt='g',annot=True)
+plt.xlabel("Predicted labels")
+plt.ylabel("Actual labels")
+plt.title("Confusion matrix")
+plt.show()
+#USING HISTOGRADIENTBOOSTING CLASSIFIER
+from sklearn.experimental import enable_hist_gradient_boosting
+from sklearn.ensemble import HistGradientBoostingClassifier
+HGBC_model = HistGradientBoostingClassifier(max_iter=100,learning_rate=0.1,max_depth=6,random_state=42)
+HGBC_model.fit(x_train,y_train)
+y_pred=HGBC_model.predict(x_test)
+print(accuracy_score(y_test,y_pred))
+conf_mat=confusion_matrix(y_test,y_pred)
+print(conf_mat)
+plt.figure(figsize=(5,4))
+sns.heatmap(conf_mat,cmap="coolwarm",fmt='g',annot=True)
+plt.xlabel("Predicted labels")
+plt.ylabel("Actual labels")
+plt.title("Confusion matrix")
+plt.show()
 #DROPPING COLUMNS NOT NEEDED FOR LINEAR REGRESSION.this takes into accout 2024 predictions
 unemployment_df=unemployment_df.drop(['country_name','sex','age_categories'],axis=1)
 print(unemployment_df)
+correlation_matrix=unemployment_df.corr()
+sns.heatmap(correlation_matrix,annot=True,cmap='coolwarm',fmt='.2f')
+plt.title("correlation matrix")
+plt.show()
 #CREATING X AND Y
 x=unemployment_df.iloc[:,:-1]
 print(x.shape)
@@ -244,7 +310,7 @@ valid,x_valid,y_valid = valid.iloc[:,1:],valid.iloc[:,0]
 test,x_test,y_test =test.iloc[:,1:],test.iloc[:,0]
 print(x_train)"""
 
-#LINEAR REGRESSION
+#LINEAR REGRESSION MODEL
 linreg_model = LinearRegression()
 linreg_model.fit(x_train,y_train)
 y_pred = linreg_model.predict(x_test)
@@ -254,5 +320,114 @@ print(f"the root square value is {r2}")
 mse = mean_squared_error(y_test,y_pred)
 print(f"the mean squared error is {mse}")
 
+#USING RANDOM FOREST REGRESSOR
+from sklearn.ensemble import RandomForestRegressor
+RFR_model = RandomForestRegressor(n_estimators=1000,criterion="squared_error",max_depth=50,random_state=42)
+RFR_model.fit(x_imputed,y_imputed)
+y_pred=RFR_model.predict(x_imputed)
+r2=r2_score(y_imputed,y_pred)
+print(f"the r squred value is {r2}")
+plt.scatter(y_test,y_pred)
+plt.plot([min(y_test),max(y_test)],[min(y_test),max(y_test)],color="red")
+plt.xlabel("Actual labels")
+plt.ylabel("Predicted labels")
+plt.title("True vs Predicted Values using R2 square")
+plt.show()
 
+#USING DECISION TREE REGRESSOR
+from sklearn.tree import DecisionTreeRegressor
+DTR_model = DecisionTreeRegressor(criterion="squared_error",max_depth=50,random_state=42)
+DTR_model.fit(x_imputed,y_imputed)
+y_pred=DTR_model.predict(x_imputed)
+r2=r2_score(y_imputed,y_pred)
+print("the r squred value is {}".format(r2))
+plt.scatter(y_test,y_pred)
+plt.plot([min(y_test),max(y_test)],[min(y_test),max(y_test)],color="red")
+plt.xlabel("Actual labels")
+plt.ylabel("Predicted labels")
+plt.title("True vs Predicted Values using R2 square")
+plt.show()
 
+#USING HISTOGRADIENTBOOSTER REGRESSOR
+from sklearn.ensemble import HistGradientBoostingRegressor
+HGBR_model = HistGradientBoostingRegressor(max_iter=100,learning_rate=0.1,max_depth=6,random_state=42)
+HGBR_model.fit(x_train,y_train)
+y_pred=HGBR_model.predict(x_test)
+print(mean_squared_error(y_test,y_pred))
+print(r2_score(y_test,y_pred))
+plt.scatter(y_test,y_pred)
+plt.plot([min(y_test),max(y_test)],[min(y_test),max(y_test)],color="red")
+plt.xlabel("Actual labels")
+plt.ylabel("Predicted labels")
+plt.title("True vs Predicted Values using R2 square")
+plt.show()
+
+#TRY TENSORFLOW
+import tensorflow as tf
+nn_model = tf.keras.Sequential([
+    tf.keras.layers.Dense(64,activation = 'relu'),
+      tf.keras.layers.Dropout(0.2),
+      tf.keras.layers.Dense(64,activation='relu'),
+      tf.keras.layers.Dropout(0.2),
+      tf.keras.layers.Dense(1,activation= 'sigmoid')
+  ])
+nn_model.compile(optimizer=tf.keras.optimizers.Adam(0.01),loss ='mean_squared_error')
+history=nn_model.fit(x_train,y_train,epochs= 200,batch_size=32,validation_split=0.2,verbose=0)
+y_pred=nn_model.predict(x_test)
+r2=r2_score(y_test,y_pred)
+print(r2)
+plt.scatter(y_test,y_pred)
+plt.plot([min(y_test),max(y_test)],[min(y_test),max(y_test)],color="red")
+plt.xlabel("Actual labels")
+plt.ylabel("Predicted labels")
+plt.title("True vs Predicted Values using R2 square")
+MSE=mean_squared_error(y_test,y_pred)
+print(MSE)
+plt.scatter(y_test,y_pred)
+plt.plot([min(y_test),max(y_test)],[min(y_test),max(y_test)],color="red")
+plt.xlabel("Actual labels")
+plt.ylabel("Predicted labels")
+plt.title("True vs Predicted Values using MSE")
+
+plt.figure(figsize=(10,6))
+sns.set_style("whitegrid")
+plt.plot(history.history['loss'],label="Training loss")
+plt.plot(history.history['val_loss'],label="validation loss")
+plt.title("Training vs Validation loss")
+plt.xlabel("epochs")
+plt.ylabel("loss")
+plt.show()
+
+#TENSOR FLOW WITH A FUNCTION
+def train_model(x_train,y_train,dropout_prob,num_nodes,lr,epochs,batch_size):
+  nn_model = tf.keras.Sequential([
+      tf.keras.layers.Dense(num_nodes,activation = 'relu'),
+      tf.keras.layers.Dropout(dropout_prob),
+      tf.keras.layers.Dense(num_nodes,activation='relu'),
+      tf.keras.layers.Dropout(dropout_prob),
+      tf.keras.layers.Dense(1,activation= 'sigmoid')
+  ])
+  nn_model.compile(optimizer=tf.keras.optimizers.Adam(lr),loss ='mean_squared_error')
+
+  history = nn_model.fit(x_train,y_train,epochs= epochs,batch_size=batch_size,validation_split=0.2,verbose=0)
+
+  return nn_model,history
+for num_nodes in [64,128,256]:
+  for dropout_prob in [0,0.2,0.3]:
+    for lr in [0.01,0.005,0.001]:
+      for batch_size in [64,128,256]:
+        for epochs in [100,500,1000]:
+         print(f"{num_nodes} nodes,dropout{dropout_prob},lr{lr},batch_size{batch_size},epoch{epochs}")
+         model,history = train_model(x_train,y_train,dropout_prob,num_nodes,lr,epochs,batch_size)
+         r2=r2_score(y_test,y_pred)
+         print(f"R squared ",r2)
+         MSE=mean_squared_error(y_test,y_pred)
+         print("Mean squared value is {}".format(MSE))
+plt.figure(figsize=(10,6))
+sns.set_style("whitegrid")
+plt.plot(history.history['loss'],label="Training loss")
+plt.plot(history.history['val_loss'],label="validation loss")
+plt.title("Training vs Validation loss")
+plt.xlabel("epochs")
+plt.ylabel("loss")
+plt.show()
